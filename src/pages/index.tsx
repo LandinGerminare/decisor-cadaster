@@ -1,115 +1,179 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+import Button from "@/components/FormComponents/Button";
+import Input from "@/components/FormComponents/Input";
+import useAuth from "@/context/Auth";
+import { AuthModel } from "@/context/Auth/types";
+import { loginRequest } from "@/entraid/authConfig";
+import { useTripleRequest } from "@/hooks/triple/useTripleRequest";
+import { useIsAuthenticated, useMsal } from "@azure/msal-react";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { Eye, EyeSlash } from "phosphor-react";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const { instance, accounts } = useMsal();
+  const [password, setPassword] = useState("");
+  const isAuthenticated = useIsAuthenticated();
+  const [graphData, setGraphData] = useState(null);
+  const { setCredentials, getAccessToken } = useAuth();
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+  const [viewPassword, setViewPassword] = useState(false)
 
-export default function Home() {
+  const [result, doLogin] = useTripleRequest<AuthModel>("POST", {
+    onSuccess(data) {
+      toast.success("Login realizado com sucesso!");
+      setCredentials(data);
+      navigate();
+    },
+    onError(errorMessage) {
+      toast.error(errorMessage);
+    },
+  });
+
+  useEffect(() => {
+    if (isAuthenticated && !graphData) {
+      RequestProfileData();
+    }
+  }, [isAuthenticated]);
+
+  //Pega os dados do usuário do entraID assim que estiver autenticado
+  async function RequestProfileData() {
+    try {
+      const response = await instance.acquireTokenSilent({
+        ...loginRequest,
+        account: accounts[0],
+      });
+      const userData: any = {
+        access_token: response.accessToken,
+        type: "Bearer",
+        user_roles: []
+      };
+      setGraphData(userData);
+      getTokenEntraID(response)
+    } catch (error) {
+      toast.error("Erro ao obter os dados do perfil do usuário");
+    }
+  }
+
+  const getTokenEntraID = (userData: any) => {
+    if (userData) {
+      const formData = new FormData();
+      formData.append("username", `${userData.account.username}`);
+      formData.append("password", `${userData.uniqueId}`);
+      formData.append("client_id", "ENTRA_ID");
+      doLogin({
+        url: "/v1/user/access-token",
+        body: formData,
+        config: {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      });
+    } else {
+      toast.warning("Ocorreu um erro ao fazer o login");
+    }
+  };
+
+  const handleLogin = () => {
+    if (email && password) {
+      const formData = new FormData();
+      formData.append("username", email);
+      formData.append("password", password);
+      doLogin({
+        url: "/v1/user/access-token",
+        body: formData,
+        config: {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      });
+    } else {
+      toast.warning("Preencha os campos corretamente");
+    }
+  };
+
+  function navigate() {
+    const from = router.query["from"];
+    if (from) {
+      router.push(`/${from}`);
+    } else {
+      router.push("/cadaster-usuario");
+    }
+  }
+
+  useEffect(() => {
+    if (getAccessToken() !== null) {
+      navigate();
+    }
+  }, []);
+
   return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
-    >
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/pages/index.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="h-screen w-screen flex flex-row">
+      <div className="w-full bg-black h-full flex items-center justify-center flex-col text-neutral-1000">
+        <div className="border-b-[1px] border-neutral-300 p-2 w-[20rem] items-center flex justify-center">
+          <span className="text-7xl">
+            <img src="/logo/decisor_logo.svg" className="h-[62px]" />
+          </span>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+        <div className="my-5">
+          <span className="text-xl text-neutral-700">Entre com sua conta</span>
+        </div>
+        <div className="flex flex-col space-y-4 w-1/2">
+          <div className="flex flex-col mt-2">
+            <Input
+              label="E-mail"
+              type="email"
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <br />
+            <div className="relative w-full">
+              <Input
+                label="Senha"
+                type={viewPassword ? "text" : "password"}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                onClick={() => setViewPassword(viewPassword ? false : true)}
+                className="absolute top-2/3 -translate-y-1/2 right-0 p-3 pt-4 text-gray-500 hover:text-gray-700"
+                title={viewPassword ? "Ocultar" : "Mostrar"}
+              >
+                {viewPassword ? <EyeSlash size={32} /> : <Eye size={32} />}
+              </button>
+            </div>
+            <br />
+          </div>
+
+          <br></br>
+          <div className="flex justify-end">
+            <p
+              className="mr-2 mb-5 hover:cursor-pointer hover:text-support-info w-max"
+              onClick={() => {
+                router.push("/forgot-password");
+              }}
+            >
+              Esqueci minha senha
+            </p>
+          </div>
+
+          <Button
+            title="Entrar"
+            loading={result.state === "Loading"}
+            onClick={handleLogin}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        </div>
+      </div>
+      <video
+        autoPlay
+        loop
+        muted
+        className="w-9/12 bg-black object-contain"
+      >
+        <source src="https://decisor-api.s3.amazonaws.com/assets/initial_video.mp4" />
+      </video>
+    </div >
   );
 }
