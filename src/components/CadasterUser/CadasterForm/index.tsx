@@ -12,6 +12,7 @@ interface FormState {
   real_name: string
   company_ids: number[]
   roles: string[]
+  plan: string[]
   external_id: string
 }
 
@@ -20,6 +21,7 @@ type FormAction =
   | { type: "setRealName"; payload: string }
   | { type: "setCompanyId"; payload: number[] }
   | { type: "setRoles"; payload: string }
+  | { type: "setPlanos"; payload: string }
   | { type: "setExternalId"; payload: string }
   | { type: "reset" }
 
@@ -28,6 +30,7 @@ const initialState: FormState = {
   real_name: "",
   company_ids: [],
   roles: [],
+  plan: [],
   external_id: "",
 }
 
@@ -43,6 +46,11 @@ const roleOptions: OptionType[] = [
   { label: "USER_APPROVER", value: "USER_APPROVER" },
 ];
 
+const planosOptions: OptionType[] = [
+  { label: "PRO", value: "PRO" },
+  { label: "BASIC", value: "BASIC" },
+];
+
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
     case "setUsername":
@@ -56,6 +64,8 @@ function formReducer(state: FormState, action: FormAction): FormState {
       };
     case "setRoles":
       return { ...state, roles: [action.payload] }
+    case "setPlanos":
+      return { ...state, plan: [action.payload] }
     case "setExternalId":
       return { ...state, external_id: action.payload }
     case "reset":
@@ -161,10 +171,26 @@ export default function CadasterForm() {
       <div className="flex w-full gap-4">
         <Input
           label="External ID"
-          componentStyle="w-1/2"
+          componentStyle="w-full"
           value={state.external_id}
           onChange={(e) => dispatch({ type: "setExternalId", payload: e.target.value })}
         />
+
+        <div className="flex flex-col w-full">
+          <label className="mb-1">Planos</label>
+          <Select<OptionType>
+            placeholder="Selecione"
+            value={planosOptions.find((o) => o.value === state.plan[0]) || null}
+            onChange={(selected: SingleValue<OptionType>) => {
+              if (selected) {
+                dispatch({ type: "setPlanos", payload: selected.value });
+              }
+            }}
+            options={planosOptions}
+            isSearchable
+            styles={customStyles}
+          />
+        </div>
       </div>
 
       <Button

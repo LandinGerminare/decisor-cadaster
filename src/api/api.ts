@@ -4,7 +4,7 @@ import axios, { AxiosError } from "axios";
 import { toast } from "react-toastify";
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL,
+  baseURL: "https://api.decisor.app",
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
