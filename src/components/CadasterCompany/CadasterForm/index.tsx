@@ -150,6 +150,7 @@ export default function CadasterForm() {
           }}
           isSearchable
           styles={customStyles}
+          noOptionsMessage={() => "Nenhuma opção encontrada"}
         />
       </div>
 
