@@ -2,12 +2,14 @@ export const menuOptions: MenuItem[] = [
   {
     route: "/cadaster-usuario",
     name: "Cadastrar Usuário",
-    requireBranchAndProduct: true,
+  },
+  {
+    route: "/cadaster-company",
+    name: "Cadastrar Empresa",
   },
 ];
 
 export interface MenuItem {
   name: string;
   route: string;
-  requireBranchAndProduct: boolean;
 }

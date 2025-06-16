@@ -12,7 +12,7 @@ interface FormState {
   real_name: string
   company_ids: number[]
   roles: string[]
-  plan: string[]
+  plan: string
   external_id: string
 }
 
@@ -30,7 +30,7 @@ const initialState: FormState = {
   real_name: "",
   company_ids: [],
   roles: [],
-  plan: [],
+  plan: "",
   external_id: "",
 }
 
@@ -49,6 +49,7 @@ const roleOptions: OptionType[] = [
 const planosOptions: OptionType[] = [
   { label: "PRO", value: "PRO" },
   { label: "BASIC", value: "BASIC" },
+  { label: "CONTENTS", value: "CONTENTS" },
 ];
 
 function formReducer(state: FormState, action: FormAction): FormState {
@@ -65,7 +66,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
     case "setRoles":
       return { ...state, roles: [action.payload] }
     case "setPlanos":
-      return { ...state, plan: [action.payload] }
+      return { ...state, plan: action.payload }
     case "setExternalId":
       return { ...state, external_id: action.payload }
     case "reset":
@@ -180,7 +181,7 @@ export default function CadasterForm() {
           <label className="mb-1">Planos</label>
           <Select<OptionType>
             placeholder="Selecione"
-            value={planosOptions.find((o) => o.value === state.plan[0]) || null}
+            value={planosOptions.find((o) => o.value === state.plan) || null}
             onChange={(selected: SingleValue<OptionType>) => {
               if (selected) {
                 dispatch({ type: "setPlanos", payload: selected.value });
